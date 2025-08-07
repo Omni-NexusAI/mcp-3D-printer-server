@@ -173,8 +173,18 @@ export class BambuImplementation extends PrinterImplementation {
   
   // --- print3mf ---
   async print3mf(host: string, serial: string, token: string, options: BambuPrintOptionsInternal): Promise<any> {
-    console.error("print3mf error: bambu-node library does not directly support the required FTPS file upload for .3mf files.");
-    throw new Error("Printing .3mf files is not supported with the current bambu-node library integration due to missing FTPS capability.");
+    console.warn(`
+      ****************************************************************************************
+      *                                 SECURITY WARNING                                     *
+      ****************************************************************************************
+      * The 'bambu-node' library used for Bambu printer communication does not support FTPS    *
+      * (secure FTP). Any file uploads, if they were enabled, would be sent over an          *
+      * unencrypted connection. This is a security risk.                                     *
+      *                                                                                      *
+      * To mitigate this, printing .3mf files is currently disabled.                         *
+      ****************************************************************************************
+    `);
+    throw new Error("SECURITY_RISK: Printing .3mf files is disabled because the underlying 'bambu-node' library lacks support for FTPS (secure file transfer).");
   }
   
   // --- cancelJob ---
