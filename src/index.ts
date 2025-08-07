@@ -33,8 +33,10 @@ export function isOriginAllowed(origin?: string) {
 }
 
 // -- Existing MCP server implementation below --
+import express from "express";
+import http from "http";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
@@ -57,7 +59,6 @@ const DEFAULT_HOST = process.env.PRINTER_HOST || "localhost";
 const DEFAULT_PORT = process.env.PRINTER_PORT || "80";
 const DEFAULT_API_KEY = process.env.API_KEY || "";
 const DEFAULT_TYPE = process.env.PRINTER_TYPE || "octoprint"; // Default to OctoPrint
-const TEMP_DIR = process.env.TEMP_DIR || path.join(process.cwd(), "temp");
 
 // Slicer configuration
 const DEFAULT_SLICER_TYPE = process.env.SLICER_TYPE || "prusaslicer";
@@ -67,11 +68,6 @@ const DEFAULT_SLICER_PROFILE = process.env.SLICER_PROFILE || "";
 // Bambu-specific default values
 const DEFAULT_BAMBU_SERIAL = process.env.BAMBU_SERIAL || "";
 const DEFAULT_BAMBU_TOKEN = process.env.BAMBU_TOKEN || "";
-
-// Ensure temp directory exists
-if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
-}
 
 class ThreeDPrinterMCPServer {
   private server: Server;
@@ -93,7 +89,7 @@ class ThreeDPrinterMCPServer {
     );
 
     this.printerFactory = new PrinterFactory();
-    this.stlManipulator = new STLManipulator(TEMP_DIR);
+    this.stlManipulator = new STLManipulator(WORKSPACE_DIR);
 
     this.setupHandlers();
     this.setupErrorHandling();
@@ -302,9 +298,30 @@ class ThreeDPrinterMCPServer {
   // ... existing methods unchanged ...
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    logSafe("3D Printer MCP server running on stdio transport");
+    const app = express();
+    const httpServer = http.createServer(app);
+
+    app.use((req, res, next) => {
+      if (corsCheck(req.headers.origin)) {
+        res.setHeader("Access-Control-Allow-Origin", req.headers.origin as string);
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      }
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+        return;
+      }
+      next();
+    });
+
+    app.post("/mcp", (req, res) => {
+      const transport = new SSEServerTransport("/mcp", res);
+      this.server.connect(transport);
+    });
+
+    httpServer.listen(SERVER_PORT, SERVER_HOST, () => {
+      logSafe(`3D Printer MCP server running on http://${SERVER_HOST}:${SERVER_PORT}`);
+    });
   }
 }
 

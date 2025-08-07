@@ -1,12 +1,12 @@
 /* Path safety helpers to constrain file operations */
-const path = require('path');
+import path from 'path';
 
-function isPathInside(parent, child) {
+export function isPathInside(parent: string, child: string): boolean {
   const rel = path.relative(parent, child);
   return !!rel && !rel.startsWith('..') && !path.isAbsolute(rel);
 }
 
-function safeJoin(baseDir, ...segments) {
+export function safeJoin(baseDir: string, ...segments: string[]): string {
   const target = path.join(baseDir, ...segments);
   const base = path.resolve(baseDir);
   const resolved = path.resolve(target);
@@ -15,5 +15,3 @@ function safeJoin(baseDir, ...segments) {
   }
   return resolved;
 }
-
-module.exports = { isPathInside, safeJoin };
