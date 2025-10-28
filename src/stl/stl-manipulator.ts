@@ -5,6 +5,8 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import { safeJoin } from '../security/paths.js';
+import { WORKSPACE_DIR } from '../security/config.js';
 import { EventEmitter } from 'events';
 import * as crypto from 'crypto';
 import { execFile } from 'child_process';
@@ -41,15 +43,15 @@ export type TransformationParams = {
 };
 
 export class STLManipulator extends EventEmitter {
-  private tempDir: string;
+  private workspaceDir: string;
   private activeOperations: Map<string, boolean> = new Map();
 
-  constructor(tempDir: string = path.join(process.cwd(), 'temp')) {
+  constructor(workspaceDir: string = WORKSPACE_DIR) {
     super();
-    this.tempDir = tempDir;
+    this.workspaceDir = workspaceDir;
     // Ensure temp directory exists
-    if (!fs.existsSync(this.tempDir)) {
-      fs.mkdirSync(this.tempDir, { recursive: true });
+    if (!fs.existsSync(this.workspaceDir)) {
+      fs.mkdirSync(this.workspaceDir, { recursive: true });
     }
   }
 
@@ -215,7 +217,7 @@ export class STLManipulator extends EventEmitter {
       
       // Generate output file path
       const outputFileName = path.basename(stlFilePath, '.stl') + '_scaled.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
       
       // Save the modified STL
       await this.saveSTL(geometry, outputFilePath, progressCallback);
@@ -289,7 +291,7 @@ export class STLManipulator extends EventEmitter {
       
       // Generate output file path
       const outputFileName = path.basename(stlFilePath, '.stl') + '_rotated.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
       
       // Save the modified STL
       await this.saveSTL(geometry, outputFilePath, progressCallback);
@@ -349,7 +351,7 @@ export class STLManipulator extends EventEmitter {
       
       // Generate output file path
       const outputFileName = path.basename(stlFilePath, '.stl') + '_translated.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
       
       // Save the modified STL
       await this.saveSTL(geometry, outputFilePath, progressCallback);
@@ -517,7 +519,7 @@ export class STLManipulator extends EventEmitter {
       
       // Write the SVG to file
       const outputFileName = path.basename(stlFilePath, '.stl') + '_visualization.svg';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
       
       await writeFileAsync(outputFilePath, svgContent);
       
@@ -701,7 +703,7 @@ export class STLManipulator extends EventEmitter {
       
       // Generate output file path
       const outputFileName = path.basename(stlFilePath, '.stl') + '_modified.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
       
       // Save the modified STL
       await this.saveSTL(geometry, outputFilePath, progressCallback);
@@ -805,7 +807,7 @@ export class STLManipulator extends EventEmitter {
       
       // Generate output file path
       const outputFileName = path.basename(stlFilePath, '.stl') + '_extended.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
       
       if (progressCallback) progressCallback(90, "Saving extended STL...");
       
@@ -866,7 +868,7 @@ export class STLManipulator extends EventEmitter {
     }
 
     const outputFileName = path.basename(stlFilePath, '.stl') + '.gcode';
-    const outputFilePath = path.join(this.tempDir, outputFileName);
+    const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
 
     let args: string[] = [];
 
@@ -1136,7 +1138,7 @@ export class STLManipulator extends EventEmitter {
       if (!this.activeOperations.get(operationId)) throw new Error("Operation cancelled");
 
       const outputFileName = path.basename(stlFilePath, '.stl') + '_merged.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
 
       await this.saveSTL(mergedGeometry, outputFilePath, progressCallback); // 80-100% progress
 
@@ -1188,7 +1190,7 @@ export class STLManipulator extends EventEmitter {
       if (!this.activeOperations.get(operationId)) throw new Error("Operation cancelled");
 
       const outputFileName = path.basename(stlFilePath, '.stl') + '_centered.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
 
       await this.saveSTL(geometry, outputFilePath, progressCallback); // 80-100% progress
 
@@ -1335,7 +1337,7 @@ export class STLManipulator extends EventEmitter {
       if (!this.activeOperations.get(operationId)) throw new Error("Operation cancelled");
 
       const outputFileName = path.basename(stlFilePath, '.stl') + '_flat.stl';
-      const outputFilePath = path.join(this.tempDir, outputFileName);
+      const outputFilePath = safeJoin(this.workspaceDir, outputFileName);
 
       await this.saveSTL(geometry, outputFilePath, progressCallback); // 90-100% progress
 
